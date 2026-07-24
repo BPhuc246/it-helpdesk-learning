@@ -19,7 +19,7 @@ Other optional check: -> Task manager: If there are many services consume too mu
 \--> Mainly is hardware problem:
 
 1. Problem is the charger is too weak ( maybe some warning on laptop like: "Low-power charger detected")
-2. Battery cell die ( Maybe 75% of them is dead, so only one can charge ) 
+2. Battery cell die ( Maybe 75% of them is dead, so only one can charge )
 
 
 
@@ -35,7 +35,7 @@ Watch this video to know how Dual monitor setup: https://www.youtube.com/watch?v
 
 \--> Order new docking station
 
-\--> Check Display in setting 
+\--> Check Display in setting
 
 Multiple displays should be extend or duplicate or only 2
 
