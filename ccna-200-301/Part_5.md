@@ -485,3 +485,203 @@ Redistribution allows external or connected networks to be injected into OSPF as
 
 These concepts form the foundation for advanced OSPF design and troubleshooting in the **CCNA 200-301** curriculum.
 ```
+
+Bonus Summary:
+
+* Model OSPF: *
+
+                    OSPF DOMAIN
+                         |
+             +-----------+-----------+
+             |                       |
+          Area 0                  Area 1
+        (Backbone)              (non-backbone)
+             |                       |
+             |                       |
+            R1                      R4
+             |
+             |
+          Area 3
+       (non-backbone)
+             |
+            R5
+
+OSPF = routing protocol
+Area = area in OSPF.
+Area 0 = backbone.
+ABR = router stands between Areas.
+ASBR = router take route from outside OSPF into inside OSPF.
+LSA = information that OSPF use to describe topology/routes.
+LSDB = database contain LSAs.
+SPF = algorithm using LSDB to find the best path.
+Routing table = final result used by router to forward packet.
+
+Important chain: 
+Interface -> OSPF Neighbor -> LSA -> LSDB -> SPF -> Best Path -> Routing Table -> Forward packet
+
+
+* What does OSPF actually do ? *
+
+Example:
+
+( 1.1.1.1 )
+R1 -------- R2 ( 2.2.2.2 )
+ \          /
+  \        /
+   \      /
+      R3 ( 3.3.3.3 )
+
+When R1 connected to R2 and R3, R2 connected to R1 and R3, R3 connected to R1 and R2
+After that these routers can calculate the destination to other routers.
+
+
+* What is LSA ? *
+
+LSA = Link-State Advertisement ( this is a piece of information that OSPF use to give notification about topology or route.  )
+Example: R1 has a link to R2 and R3 -> this information will be packaged into LSA
+
+-> LSA is not a routing table, chain: LSA -> LSDB -> SPF -> Routing Table
+
+
+* What is LSDB ? *
+
+LSDB = Link-State Database ( it is a database containing LSAs that router knows  )
+Example:
+                 LSDB
+                  |
+       +----------+----------+
+       |          |          |
+      R1         R2         R3
+      LSA        LSA        LSA
+       |          |          |
+       +----------+----------+
+                  |
+                 SPF
+                  |
+             Routing Table
+
+`show ip ospf database`: show LSDB
+`show ip route`: show routing table
+
+Types of LSA:
++ Router LSA ( I am a router and there are my links )
++ Network LSA ( this is multi-access network and DR describe it )
++ Summary LSA ( This area has network of other area )
++ ASBR Summary LSA ( Where is the path to reach ASBR ? )
++ AS External LSA ( There is a router outside OSPF )
+
+Type 1 → "I am router."
+Type 2 → "This is network segment."
+Type 3 → "Other area has this network."
+Type 4 → "Go this way to reach ASBR"
+Type 5 → "There is a router outside the OSPF."
+
+
+- Type 1: Router LSA 
+Each routers OSPF create type 1 LSA for each areas that they ( routers ) participant in
+
+R1 will create information like: ( link to R2 + link to R3 + loopback 1.1.1.1 ), R2 create type 1 of R2, R3 create type 1 of R3
+
+
+- Type 2: Network LSA
+Type usually relate to DR
+
+              Switch
+          /     |     \
+        R1      R2     R3
+
+This is multi-access network. Instead of OSPF let every routers create adjacency fully, the number of adjacency can increse sharply. OSPF solve this by: 
+
+DR
+ |
+ +---- R1
+ +---- R2
+ +---- R3
+
+=> DR create type 2 network LSA to describe that network segment.
+
+
+- Type 3: Summary LSA
+
+Example:
+
+           Area 0
+        R1 ------- R2
+         |          |
+         |          |
+       Area 3     Area 1
+         |          |
+        R5         R4 ( 4.4.4.4/32 )
+
+=> R5 is not in Area 1, how does R5 know 4.4.4.4 exist ? -> R1 and R2 act as ABRs and propagate information between areas via Type 3 LSAs.
+
+
+* What is ABR ( Area Border Router ) ? *
+
+- ABR is a router connecting OSPF areas together
+Example: Area 0 - R1 - Area 3 ( R1 has interface in area 0, area 3 so R1 is ABR )
+Example: Area 1 - R4 ( R4 is a internal router )
+
+
+* What is AS ( Autonomous System ) ? *
+
+- A network system under a single organization or administration.
+
+Example:
+
+Company A            Company B               ISP
+    |                    |                    |
+ AS65001              AS65003              AS65002
+
+ OSPF usually use inside an autonomous system, so OSPF is a IGP - Interior Gateway Protocol
+
+
+- Type 4: What is ASBR ? ( Autonomous System Boundary Router )
+
+Boundary between OSPF and routing information outside OSPF
+Example: 
+          OSPF
+           
+R1 ----- R2 ----- R3
+                  |
+                  |
+              External network
+
+If R3 take route from static, EIGRP, BGP, connected and then give that route into OSPF: 
+External route - R3 - OSPF  => R3 is ASBR
+
+
+* How to let a router become ASBR and what is Redistribution ? *
+
+`Redistribution connected metric <number> metric-type <1|2> subnets` -> Include my connected routes in OSPF. -> It becomes ASBR.
+
+Redistribution: mean take route from this routing source to another routing protocol.
+
+- Type 5: External LSA
+
+When R4 redistribute: OSPF need to say: "This network come from outside OSPF". 
+That information broadcasted by type 5 LSA
+
+Example LSA:
+
+                      OSPF
+                       |
+        +--------------+--------------+
+        |                             |
+      Area 0                        Area 1
+        |                             |
+    R1 ---- R2                       R4
+     \      /                         |
+      \    /                        ASBR
+       \  /                           |
+        R3                       64.64.64.64
+         |
+       Area 3
+         |
+        R5
+
+* What is stubby area ? *
+
+It block external Type 5 LSAs instead it inject 0.0.0.0/0 ( default route )
+
+Why they need to stub from both two side routers ? -> Because OSPF neighbors agree on Area attributes.
